@@ -9,7 +9,17 @@
 [![python](https://img.shields.io/badge/python-3.10%2B-yellow)](pyproject.toml)
 [![live-data](https://img.shields.io/badge/data-live_verified-orange)](scripts/fetch_live.py)
 
-**[🌐 Open the interactive website](docs/preview.html)** · **[🌱 Beginner guide](#-beginner-guide--read-this-and-you-are-a-professional)** · **[🎯 Quiz](#-quiz--from-scratch-to-pro)** · **[🔬 Playground](#-playground--feel-tokenization)** · **[🚀 Quick start](#-quick-start--60-seconds)**
+**[🌐 Open the interactive website](https://m0-ar.github.io/tokenization-zero-to-hero-phd-2026/)** · **[🌱 Beginner guide](#-beginner-guide--read-this-and-you-are-a-professional)** · **[🎯 Quiz](#-quiz--from-scratch-to-pro)** · **[🔬 Playground](#-playground--feel-tokenization)** · **[🚀 Quick start](#-quick-start--60-seconds)**
+
+> ### 🌐 View the site — pick any link (all three render the same page)
+> | Link | URL |
+> |---|---|
+> | 🏠 Home | https://m0-ar.github.io/tokenization-zero-to-hero-phd-2026/ |
+> | 📄 Page | https://m0-ar.github.io/tokenization-zero-to-hero-phd-2026/preview.html |
+> | 📁 Alt path | https://m0-ar.github.io/tokenization-zero-to-hero-phd-2026/docs/preview.html |
+>
+> Works under either Pages source setting (`/docs` recommended, `/` also fine) —
+> mirrors at repo root + `/docs` resolve every path. See [Website & GitHub Pages](#-website--github-pages--2-minutes).
 
 ![demo](docs/demo.gif)
 
@@ -35,7 +45,7 @@
 | JSON → YAML | saves 12.1% (GPT-2) · 15.6% (`cl100k`/`o200k`) |
 
 ![hero](docs/screenshot-hero.png)
-*The interactive site ([`docs/preview.html`](docs/preview.html)) — playground, quiz with step-by-step answers, live tables, and 2-minute Pages deploy guide.*
+*The interactive site (https://m0-ar.github.io/tokenization-zero-to-hero-phd-2026/) — playground, quiz with step-by-step answers, live tables, and 2-minute Pages deploy guide. Source: [`docs/preview.html`](docs/preview.html).*
 
 ---
 
@@ -95,7 +105,7 @@ Prove each one next: playground → quiz → `exp03…exp08`.
 
 ## 🔬 Playground — feel tokenization
 
-No install. Type in **[the website](docs/preview.html)** — it chunks your text exactly
+No install. Type in **[the website](https://m0-ar.github.io/tokenization-zero-to-hero-phd-2026/)** — it chunks your text exactly
 like the repo's pre-tokenizer (letters / numbers / spaces / punctuation stay separate;
 merges never cross chunks) and shows density live. Then reproduce it for real:
 
@@ -106,7 +116,7 @@ PYTHONPATH=src python experiments/exp04_code_whitespace.py  # live CPython bpt
 
 ## 🎯 Quiz — from scratch to pro
 
-Six questions on **[the website](docs/preview.html)** (click any answer → instant
+Six questions on **[the website](https://m0-ar.github.io/tokenization-zero-to-hero-phd-2026/)** (click any answer → instant
 step-by-step reasoning, *"Let's work this out…"* style, score at the end):
 
 1. Why not one token per Unicode character? 2. Why is `677` two tokens but `127` one?
@@ -255,17 +265,18 @@ no build step, works offline): hero + CEO summary + demo GIF + beginner guide +
 interactive playground + 6-question quiz with step-by-step answers + live tables +
 figures + Pages guide + FAQ.
 
-**Publish it for your fork:**
+**Publish it for your fork (recommended: `/docs` — but `/` works too thanks to root mirrors):**
 
 1. Push this repo to GitHub (keep the `docs/` folder as-is).
 2. Open **Settings → Pages**.
 3. Under **Build and deployment → Source** choose **Deploy from a branch**.
 4. Branch: **main**, folder: **`/docs`** → **Save**.
-5. Wait ~1 minute → open **`https://<you>.github.io/<repo>/preview.html`**.
+5. Wait ~1 minute, then click any of these (mirrors make every path resolve under either source setting):
+   - https://m0-ar.github.io/tokenization-zero-to-hero-phd-2026/ (`/` → `index.html`)
+   - https://m0-ar.github.io/tokenization-zero-to-hero-phd-2026/preview.html
+   - https://m0-ar.github.io/tokenization-zero-to-hero-phd-2026/docs/preview.html
 
-Why `/docs`? Pages serves static files directly — `preview.html`, `demo.gif`,
-`screenshot-hero.png`, and `figures/` are all relatively linked, so they render both
-locally (`open docs/preview.html`) and on Pages. No action, domain, or build needed.
+Why `/docs`? Pages serves static files directly — no build step. `docs/preview.html`, `docs/demo.gif`, and `docs/figures/` are all relatively linked, so they work both locally (`open docs/preview.html`) and on Pages. Root `preview.html` / `index.html` / `.nojekyll` are byte-identical mirrors (diff shows only asset-path lines), so a root (`/`) source setting resolves too — the recommendation is non-fatal if ignored.
 
 ---
 
