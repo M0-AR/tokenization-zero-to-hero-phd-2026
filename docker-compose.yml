@@ -1,0 +1,10 @@
+services:
+  research:
+    build: .
+    volumes:
+      - ./results:/work/results
+      - ./data:/work/data
+    environment:
+      - PYTHONPATH=/work/src
+      - TZ=UTC
+    command: python benchmarks/run_all.py --live --out results/summary.json

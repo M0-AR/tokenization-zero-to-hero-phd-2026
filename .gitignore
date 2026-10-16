@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+results/
+!results/summary.json
+data/live/*.txt
+data/live/manifest.json

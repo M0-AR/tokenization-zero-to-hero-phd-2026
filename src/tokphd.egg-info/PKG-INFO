@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: tokphd
+Version: 0.1.0
+Summary: From-scratch BPE tokenization research: verify Karpathy claims on live data
+Requires-Python: >=3.10
+Requires-Dist: regex
+Requires-Dist: tiktoken
+Requires-Dist: matplotlib
+Requires-Dist: numpy
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"

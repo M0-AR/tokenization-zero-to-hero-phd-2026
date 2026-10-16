@@ -1,0 +1,7 @@
+regex
+tiktoken
+matplotlib
+numpy
+
+[dev]
+pytest

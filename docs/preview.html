@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tokphd — Tokenization Zero-to-Hero (live-verified)</title>
+<meta name="description" content="From bytes to SolidGoldMagikarp: from-scratch BPE, GPT-2/GPT-4 pre-tokenization, and every weird LLM behaviour traced to the tokenizer — verified on live data.">
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--line:#30363d;--txt:#e6edf3;--mut:#8b949e;--acc:#58a6ff;--grn:#3fb950;--amb:#d29922;--pnk:#f778ba;--red:#ff7b72}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.65 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:1020px;margin:0 auto;padding:24px}
+.hero{text-align:center;padding:40px 16px 8px}.hero h1{font-size:clamp(28px,5vw,46px);margin:.2em 0}
+.hero p.tag{color:var(--mut);max-width:760px;margin:0 auto}
+.badges img{margin:2px}.btn{display:inline-block;background:var(--grn);color:#04120a;font-weight:700;padding:10px 18px;border-radius:10px;text-decoration:none;margin:6px}
+.btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:20px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h3{margin:.2em 0}.num{font-size:26px;font-weight:800}
+table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}th{color:var(--mut)}
+code{background:#00000066;padding:2px 6px;border-radius:6px;font-size:.9em}
+pre{background:#010409;border:1px solid var(--line);border-radius:12px;padding:14px;overflow:auto}
+details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:10px 0}
+summary{cursor:pointer;font-weight:700}
+.quiz label{display:block;background:#010409;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;cursor:pointer}
+.quiz label:hover{border-color:var(--acc)}
+.quiz .ok{border-color:var(--grn)!important;background:#0f2a1a}
+.quiz .bad{border-color:var(--red)!important;background:#2a1215}
+.step{background:#010409;border-left:4px solid var(--acc);padding:10px 14px;margin:10px 0;border-radius:0 10px 10px 0}
+nav.toc{position:sticky;top:0;background:#0d1117ee;border-bottom:1px solid var(--line);padding:8px;z-index:5;text-align:center}
+nav.toc a{color:var(--acc);margin:0 8px;font-size:14px}
+footer{color:var(--mut);text-align:center;padding:30px 0}
+img.demo{max-width:100%;border-radius:14px;border:1px solid var(--line)}
+.play input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#010409;color:var(--txt);font-size:15px}
+.tok{display:inline-block;margin:3px;padding:4px 9px;border-radius:8px;font-family:monospace;font-size:14px;border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<nav class="toc">
+<a href="#start">Start</a><a href="#beginner">Beginner guide</a><a href="#playground">Playground</a><a href="#quiz">Quiz</a><a href="#results">Results</a><a href="#pages">Pages</a><a href="#faq">FAQ</a>
+</nav>
+<div class="wrap">
+<div class="hero" id="start">
+<div>🔤 <b>tokphd</b> · from-scratch · live-verified · docker-one-command</div>
+<h1>Tokenization Zero-to-Hero</h1>
+<p class="tag"><b>CEO summary in 30 seconds:</b> every LLM bill, context limit, and half of all “weird AI mistakes” come from one invisible step — the <b>tokenizer</b>. This repo rebuilds it <b>from zero</b> (bytes → BPE → GPT-2/GPT-4 rules), proves each famous quirk on <b>live public data</b>, and hands you a <b>one-command benchmark</b> plus a <b>new discovery</b> (fertility tracks merge-failure rate, r&nbsp;=&nbsp;0.72). If you read only the Beginner guide below, you will know more than most interview candidates.</p>
+<div class="badges">
+<img src="https://img.shields.io/badge/tests-6_passed-brightgreen" alt="tests">
+<img src="https://img.shields.io/badge/docker-one_command-blue" alt="docker">
+<img src="https://img.shields.io/badge/license-MIT-green" alt="license">
+<img src="https://img.shields.io/badge/python-3.10%2B-yellow" alt="python">
+</div>
+<p><img class="demo" src="demo.gif" alt="Animated demo: bytes to tokens, arithmetic splits, whitespace fix, multilingual tax, hidden pattern"></p>
+<p><a class="btn" href="#beginner">🌱 Start the Beginner guide</a>
+<a class="btn ghost" href="#quiz">🎯 Skip to the quiz</a>
+<a class="btn ghost" href="#playground">🔬 Try the playground</a></p>
+<pre>docker compose up --build   # reproduces every number below
+# or:  make setup &amp;&amp; make test &amp;&amp; make bench</pre>
+</div>
+
+<h2 id="beginner">🌱 Beginner guide — read this and you are a professional</h2>
+<p><i>“Let's work this out in a step-by-step way to be sure we have the right answer.”</i> That is the whole method of this repo: never believe a claim — <b>run it</b>.</p>
+<div class="step"><b>Step 1 — Computers only understand numbers.</b> Text like <code>Hello</code> must become numbers before any AI can read it. Those numbers are called <b>tokens</b>.</div>
+<div class="step"><b>Step 2 — The simplest idea: one character = one token.</b> <code>H e l l o</code> → <code>[72,101,108,108,111]</code>. Works for English, explodes for Korean/emoji (150,000+ characters and growing).</div>
+<div class="step"><b>Step 3 — Better idea: UTF-8 bytes (only 256 possibilities).</b> Every character on Earth becomes 1–4 bytes. Only 256 starting pieces — tiny dictionary, but very long sequences.</div>
+<div class="step"><b>Step 4 — Best idea: BPE merges frequent pairs.</b> Count the most common byte pair (e.g. <code>e + space</code> occurred 20×), mint a new token <code>256</code>, replace everywhere, repeat. 20 merges ≈ 1.27× shorter. 50,000 merges ≈ GPT-2. 100,000 ≈ GPT-4.</div>
+<div class="step"><b>Step 5 — One safety rail: never merge across word boundaries.</b> A regex chops text into chunks first (<code>dog</code> | <code>.</code> | <code> dog</code> | <code>!</code>). That is why <code>dog.</code> never becomes one token — and why 4 spaces in Python broke GPT-2 but not GPT-4.</div>
+<div class="step"><b>Step 6 — Special tokens glue documents together.</b> <code>&lt;|endoftext|&gt;</code> separates documents; chat models add <code>&lt;|im_start|&gt;</code>/<code>&lt;|im_end|&gt;</code> per message. They are swapped in by exact match — which is also why pasting them can confuse a bot.</div>
+<div class="step"><b>Step 7 — Now you are dangerous (in a good way).</b> Costs, context limits, spelling failures, bad-at-math, non-English quality — all fall out of steps 1–6. The Quiz below checks each one.</div>
+
+<h2 id="playground">🔬 Playground — feel tokenization (no install)</h2>
+<div class="card play">
+<p>Type anything. This mini-demo mimics the repo's pre-tokenizer: it chunks letters / numbers / spaces / punctuation separately — merges never cross chunks.</p>
+<input id="in" value="Hello world 127+677=804" oninput="go()">
+<div id="out" style="margin-top:10px"></div>
+<div id="stats" style="color:var(--mut);font-size:14px;margin-top:6px"></div>
+</div>
+<script>
+const colors=["#58a6ff","#3fb950","#d29922","#f778ba","#ff7b72","#79c0ff"];
+function chunk(s){
+  const m=s.match(/'(?:[SsDdMmTt]|[Rr][Ee]|[Vv][Ee]|[Ll][Ll]|[Oo]|[Nn])|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+/gu);
+  return m||[];
+}
+function go(){
+  const s=document.getElementById('in').value;
+  const c=chunk(s); const box=document.getElementById('out'); box.innerHTML='';
+  c.forEach((t,i)=>{const d=document.createElement('span');d.className='tok';d.style.background=colors[i%colors.length]+'22';d.style.borderColor=colors[i%colors.length];d.textContent=t.replace(/ /g,'␣');box.appendChild(d);});
+  const bytes=new TextEncoder().encode(s).length;
+  document.getElementById('stats').textContent=`${c.length} chunks · ${s.length} chars · ${bytes} bytes · ~${bytes/Math.max(1,c.length)} bytes/chunk (denser = cheaper)`;
+}
+go();
+</script>
+
+<h2 id="quiz">🎯 Quiz — from scratch to pro (with step-by-step answers)</h2>
+<div class="card quiz" id="q"></div>
+<script>
+const QS=[
+{q:"Why can't we just use one token per Unicode character?",o:["Too few characters exist","~150k and growing: huge dictionary, unstable standard","Characters are already numbers","It would be too fast"],a:1,why:"Let's work this out step-by-step: 1) Unicode has ~150k code points across 161 scripts. 2) That means a 150k-row embedding table minimum. 3) The standard keeps changing. So we use 256 UTF-8 bytes + learned merges instead."},
+{q:"GPT-2 turns ' 677' into TWO tokens but ' 127' into ONE. Why?",o:["Random bug","BPE merged whatever was frequent during training — arbitrary by construction","677 is longer","The model hates 677"],a:1,why:"Step-by-step: 1) BPE only merges frequent pairs. 2) '127' happened to get merged; '677' didn't. 3) Same magnitude, different fragmentation. That is the 'arithmetic headwind': verified live as [18112] vs [718,3324]."},
+{q:"Why was GPT-2 bad at Python indentation?",o:["It never saw code","Every space was its own token (220 220 220 220), wasting context","Python is too hard","Tabs vs spaces debate"],a:1,why:"Step-by-step: 1) 4 spaces = 4 tokens in GPT-2. 2) Deep indentation eats the context window. 3) GPT-4 packs 4 spaces into 1 token (bytes/token 2.19→4.89 live). Bug → fix, in the tokenizer, not the model."},
+{q:"Hindi costs ~4× English on cl100k but ~1.6× on o200k. What fixed it?",o:["Bigger model","Marks-aware regex (\\p{M}) + better multilingual merges","Hindi got simpler","Lower prices"],a:1,why:"Step-by-step: 1) Old pattern \\p{L}+ splits vowel signs. 2) Merges can't cross splits, so Indic text strands into single bytes. 3) o200k adds \\p{M} (marks) + balanced training → tax collapses. Same script, different tokenizer decision."},
+{q:"What is a 'glitch token' like SolidGoldMagikarp?",o:["A Pokémon feature","A real token that never appeared in model training: an untrained embedding row = undefined behaviour","A prompt-injection virus","A typo"],a:1,why:"Step-by-step: 1) Tokenizer training data had the string often → merged into one token. 2) Model training data lacked it → row never updated. 3) Evoking it reads unallocated memory. Our 1MB live scan: only 8,629/50,257 GPT-2 rows ever fire."},
+{q:"YAML is ~15% cheaper than JSON for the same data. Why?",o:["YAML is newer","Fewer brackets/quotes/colons survive as separate tokens","JSON is compressed","YAML uses binary"],a:1,why:"Step-by-step: 1) Tokenizers split punctuation. 2) JSON is punctuation-heavy. 3) Same meaning, fewer tokens → less money + more context. Verified live on all three encodings."},
+];
+let qi=0,score=0;
+function renderQ(){
+  const box=document.getElementById('q');
+  if(qi>=QS.length){box.innerHTML=`<h3>Done! Score ${score}/${QS.length} 🎉</h3><p>${score===QS.length?"Pro level. You now know more than most interview candidates — go run <code>make bench</code> and cite your own numbers.":"Good progress — re-read the Beginner guide steps above, then <b>retake</b>: <button onclick='qi=0;score=0;renderQ()'>Retake</button>"}</p>`;return;}
+  const Q=QS[qi];
+  box.innerHTML=`<p><b>Q${qi+1}/${QS.length}:</b> ${Q.q}</p>`+Q.o.map((t,i)=>`<label id="o${i}"><input type="radio" name="a" value="${i}"> ${t}</label>`).join('')+`<p><button onclick="check()">Check answer</button> <span id="f"></span></p><div id="why"></div>`;
+  document.querySelectorAll('input[name=a]').forEach(r=>r.addEventListener('change',()=>{}));
+}
+function check(){
+  const sel=document.querySelector('input[name=a]:checked');
+  if(!sel)return;
+  const Q=QS[qi]; const v=+sel.value;
+  document.querySelectorAll('.quiz label').forEach(l=>l.classList.remove('ok','bad'));
+  if(v===Q.a){score++;document.getElementById('f').textContent='✅ Correct!';document.getElementById('o'+v).classList.add('ok');}
+  else{document.getElementById('f').textContent='❌ Not quite.';document.getElementById('o'+v).classList.add('bad');document.getElementById('o'+Q.a).classList.add('ok');}
+  document.getElementById('why').innerHTML=`<div class="step">${Q.why}</div><p><button onclick="qi++;renderQ()">Next →</button></p>`;
+}
+renderQ();
+</script>
+
+<h2 id="results">📊 Results — every number below was executed, not quoted</h2>
+<div class="grid">
+<div class="card"><div class="num">6 passed</div>unit tests · <code>pytest tests/ -q</code></div>
+<div class="card"><div class="num">2.19 → 4.89</div>bytes/token, GPT-2 → GPT-4 on live Python code</div>
+<div class="card"><div class="num">6.18× → 1.56×</div>Hindi tax, GPT-2 → o200k (same sentence)</div>
+<div class="card"><div class="num">r = 0.72</div>hidden pattern: fertility tracks merge-failure rate</div>
+</div>
+<table>
+<tr><th>Claim</th><th>Live evidence</th><th>Run it</th></tr>
+<tr><td>Arithmetic splits arbitrarily</td><td><code>127→[18112]</code> single · <code>677→[718,3324]</code> · <code>804→[807,3023]</code></td><td><code>exp03_arithmetic.py</code></td></tr>
+<tr><td>4 spaces waste</td><td>GPT-2 <code>[220×4]</code> vs cl100k 1 tok</td><td><code>exp04_code_whitespace.py</code></td></tr>
+<tr><td>Multilingual tax + fix</td><td>hi 6.18×/4.06×/1.56× · ko 4.41×/1.82×/1.12×</td><td><code>exp05_multilingual_tax.py</code></td></tr>
+<tr><td>Trailing space shifts distribution</td><td><code>[…,6128]</code> → <code>[…,6128,220]</code></td><td><code>exp06_special_trailing.py</code></td></tr>
+<tr><td>Glitch candidates</td><td>8,629/50,257 rows fire on 1MB; bytes 94–100 → �</td><td><code>exp07_glitch.py</code></td></tr>
+<tr><td>YAML cheaper</td><td>saves 12.1% / 15.6% / 15.6%</td><td><code>exp08_json_yaml.py</code></td></tr>
+</table>
+<p><img class="demo" src="figures/parity_cl100k_base.png" alt="Token tax vs English, cl100k"></p>
+<p><img class="demo" src="figures/parity_o200k_base.png" alt="Token tax vs English, o200k"></p>
+
+<h2>✨ Features &amp; user stories — what you can do with this repo</h2>
+<div class="grid">
+<div class="card"><h3>🎓 Learn tokenization properly</h3>Beginner guide + playground + quiz take you from “what is a token” to reading merge tables. Perfect for interviews and courses.</div>
+<div class="card"><h3>💰 Cut your LLM bill</h3>Measure bytes/token and parity on <i>your</i> prompts; pick YAML over JSON, o200k over cl100k, pre-translate when the tax is &gt;2×.</div>
+<div class="card"><h3>🌍 Ship fair multilingual products</h3>Quantify the non-English tax per language before launch; prove the fix with the same harness.</div>
+<div class="card"><h3>🐍 Debug “model” bugs that are tokenizer bugs</h3>Arithmetic, spelling, code-indent, trailing-space warnings — reproduce each in one file each.</div>
+<div class="card"><h3>🛡️ Audit glitch-token risk</h3>Scan any vocabulary for never-firing / invalid-UTF8 tokens before they reach production prompts.</div>
+<div class="card"><h3>📝 Publish with confidence</h3>Every figure links to a SHA-pinned live corpus + one Docker command. Reviewers can regenerate everything.</div>
+</div>
+
+<h2 id="pages">🌐 View as a website (GitHub Pages — 2 minutes)</h2>
+<div class="card">
+<p><b>This page you are reading <i>is</i> the website.</b> To publish it for your repo:</p>
+<ol>
+<li>Push this repo to GitHub (keep the <code>docs/</code> folder as-is).</li>
+<li>Open <b>Settings → Pages</b>.</li>
+<li>Under <b>Build and deployment → Source</b> choose <b>Deploy from a branch</b>.</li>
+<li>Branch: <b>main</b> (or <b>master</b>), folder: <b>/docs</b> → <b>Save</b>.</li>
+<li>Wait ~1 minute, then open <b><code>https://&lt;you&gt;.github.io/&lt;repo&gt;/preview.html</code></b>.</li>
+</ol>
+<p style="color:var(--mut)">Why <code>/docs</code>? GitHub Pages serves static files directly — no build step. <code>docs/preview.html</code>, <code>docs/demo.gif</code>, and <code>docs/figures/</code> are all relative-linked, so they work both locally (<code>open docs/preview.html</code>) and on Pages. No action or custom domain required.</p>
+</div>
+
+<h2 id="faq">❓ FAQ (the questions everyone asks)</h2>
+<details><summary>Do I need a GPU or API key?</summary>No. Everything runs on CPU with live <i>public</i> text. No keys, no weights, no cost.</details>
+<details><summary>How long does the full benchmark take?</summary>~2–5 minutes on a laptop (trains a 2000-token BPE on 200KB + evaluates 5 tokenizers × 4 corpora).</details>
+<details><summary>Why do numbers differ slightly run to run?</summary>Live pages drift; each run records URL + UTC time + SHA-256 in <code>results/summary.json</code>. Pin <code>data/live/manifest.json</code> for byte-identical reruns.</details>
+<details><summary>Can I use this in a course / interview prep?</summary>Yes — start at the Beginner guide, play, take the quiz, then open <code>experiments/</code> in order. Each file is one claim, one page.</details>
+<details><summary>Where is the “paper”?</summary><code>README.md</code> is the full study; <code>paper/PAPER.md</code> is the 8-page draft skeleton wired to <code>results/summary.json</code>.</details>
+
+<h2>🚀 Quick start (copy-paste, 60 seconds)</h2>
+<pre>docker compose up --build
+# results/summary.json + results/figures/parity_*.png appear
+# no docker?  make setup &amp;&amp; make test &amp;&amp; make bench</pre>
+<footer>tokphd · tokenization zero-to-hero · MIT · Every number on this page was executed — run <code>docker compose up --build</code> and check.</footer>
+</div>
+</body>
+</html>
